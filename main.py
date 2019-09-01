@@ -10,10 +10,16 @@
 #---------------------------------
 import os
 import argparse
-import tensorflow as tf
 import urllib.request
 import tarfile
+
+import onnx
+
+import tensorflow as tf
 import tf2onnx
+
+from keras.applications.mobilenet import MobileNet
+import keras2onnx
 
 #---------------------------------
 # 定数定義
@@ -51,7 +57,7 @@ if __name__ == '__main__':
 
 	# --- TensorFlow ---
 	print('[INFO] TensorFlow mobilenet_v1_1.0_224 downloading ...')
-	save_dir = os.path.join(args.save_dir, 'mobilenet_v1_1.0_224')
+	save_dir = os.path.join(args.save_dir, 'tensorflow/mobilenet_v1_1.0_224')
 	save_file = os.path.join(save_dir, 'mobilenet_v1_1.0_224.tgz')
 	os.makedirs(save_dir, exist_ok=True)
 	url = 'http://download.tensorflow.org/models/mobilenet_v1_2018_08_02/mobilenet_v1_1.0_224.tgz'
@@ -77,5 +83,24 @@ if __name__ == '__main__':
 	os.makedirs(onnx_dir, exist_ok=True)
 	with open(os.path.join(onnx_dir, 'model.onnx'), 'wb') as f:
 		f.write(model_proto.SerializeToString())
+	print('[INFO] DONE')
+
+
+	# --- Keras ---
+	print('[INFO] Keras MobileNet v1 downloading ...')
+	model = MobileNet(input_shape=None, alpha=1.0, depth_multiplier=1, dropout=1e-3, include_top=True, weights='imagenet', input_tensor=None, pooling=None, classes=1000)
+
+	save_dir = os.path.join(args.save_dir, 'keras/mobilenet_v1')
+	save_file = os.path.join(save_dir, 'mobilenet_v1.h5')
+	os.makedirs(save_dir, exist_ok=True)
+	model.save(save_file)
+	print('[INFO] DONE')
+
+	print('[INFO] Keras MobileNet v1 to ONNX ...')
+	save_dir = os.path.join(args.save_dir, 'keras/mobilenet_v1/onnx_model')
+	os.makedirs(save_dir, exist_ok=True)
+	save_file = os.path.join(save_dir, 'model.onnx')
+	onnx_model = keras2onnx.convert_keras(model, model.name)
+	onnx.save_model(onnx_model, save_file)
 	print('[INFO] DONE')
 
